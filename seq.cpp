@@ -43,6 +43,46 @@ void readInitStateFile(std::string filename,
     }
 }
 
+bool collisionTest(std::vector<std::vector<double> > forceMatrix, std::vector<Body> bodies, int duration) 
+{
+    bool collisionDetected = false;
+    int timestep = 1; // represents one day (can be changed)
+    int timestepCounter = 0;
+
+    while (!collisionDetected && (timestepCounter < duration))
+    {
+        // Check to see if any bodies have the same position
+        for (int x = 0; x < bodies.size(); x++)
+        {
+            for (int y = 0; y < bodies.size(); y++)
+            {
+                if((bodies[x].pos_x == bodies[y].pos_x) && (bodies[x].pos_x == bodies[y].pos_x))
+                {
+                    collisionDetected = true;
+                    bodies[x].hasCollided = true;
+                    bodies[y].hasCollided = true;
+                }
+            }
+        }
+
+        // Update force matrix
+
+        // Update velocities
+
+        // Update positions
+
+        // Add time to the timestep counter
+        timestepCounter += 1;
+    }
+
+    return collisionDetected;
+}
+
+double velocity(float d, float t) 
+{
+    return d / t;
+}
+
 double distance(float x1, float y1, float x2, float y2)
 {
     return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
@@ -58,6 +98,13 @@ int main(int argc, char **argv) {
         std::cout << "Missing required filename argument" << std::endl;
         return 1;
     }
+
+    // Take in time duration from the user
+    int duration;
+    std::cout << "Enter the number of years you would like to test: " << std::endl;
+    std::cin >> duration;
+
+    duration = duration * 365; // change duration to days
 
     std::string filename = argv[1];
     
@@ -75,10 +122,10 @@ int main(int argc, char **argv) {
     std::vector<Body> bodies;
     // Populate body vector
     for (int i = 0; i < name.size(); i++) {
-        bodies.push_back(Body(name[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i]));
+        bodies.push_back(Body(name[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i], false));
     }
     
-    std::vector<std::vector<double>> forceMatrix;
+    std::vector<std::vector<double> > forceMatrix;
 
     // Iterate through each pair of bodies and calculate the force they are exerting on each other.
     forceMatrix.resize(bodies.size());  // set # of columns (x)
@@ -97,6 +144,10 @@ int main(int argc, char **argv) {
             std::cout << forceMatrix[x][y] << std::endl; // Printing to make sure this is calculating force correctly.
         }
     }
+
+    // Send initial force matrix and body vector to test for collisions
+    bool collision = collisionTest(forceMatrix, bodies, duration);
+    std::cout << collision << std::endl;
 
     return 0;
 }
