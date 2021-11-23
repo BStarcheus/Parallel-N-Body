@@ -2,6 +2,10 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <math.h>
+#include "body.cpp"
+
+const double GRAVITY = 0.000000000066742;
 
 void readInitStateFile(std::string filename,
                        std::vector<std::string> &name,
@@ -11,7 +15,7 @@ void readInitStateFile(std::string filename,
                        std::vector<float> &pos_y,
                        std::vector<float> &vel_x,
                        std::vector<float> &vel_y) {
-    std::string n, elem;
+    std::string elem;
     float m, r, px, py, vx, vy;
 
     std::ifstream file(filename);
@@ -39,6 +43,15 @@ void readInitStateFile(std::string filename,
     }
 }
 
+double distance(float x1, float y1, float x2, float y2)
+{
+    return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+}
+
+double calcForce(Body x, Body y){
+    double gForce = (GRAVITY * (x.mass * y.mass)) / (pow(distance(x.pos_x, x.pos_y, y.pos_x, y.pos_y), 2));
+    return gForce;
+}
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -59,16 +72,31 @@ int main(int argc, char **argv) {
     // Load initial state of bodies into separate vectors for each type of data
     readInitStateFile(filename, name, mass, rad, pos_x, pos_y, vel_x, vel_y);
 
-    // confirming it was read correctly
+    std::vector<Body> bodies;
+    // Populate body vector
     for (int i = 0; i < name.size(); i++) {
-        std::cout << name[i] << std::endl;
-        std::cout << mass[i] << std::endl;
-        std::cout << rad[i] << std::endl;
-        std::cout << pos_x[i] << std::endl;
-        std::cout << pos_y[i] << std::endl;
-        std::cout << vel_x[i] << std::endl;
-        std::cout << vel_y[i] << std::endl;
+        bodies.push_back(Body(name[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i]));
     }
     
+    std::vector<std::vector<double>> forceMatrix;
+
+    // Iterate through each pair of bodies and calculate the force they are exerting on each other.
+    forceMatrix.resize(bodies.size());  // set # of columns (x)
+    for (int x = 0; x < bodies.size(); x++)
+    {
+        forceMatrix[x].resize(bodies.size());  // set # of rows in each column (y)
+        for (int y = 0; y < bodies.size(); y++)
+        {
+            // Don't bother calculating the force between an object and itself...
+            if(x != y){
+                forceMatrix[x][y] = calcForce(bodies[x], bodies[y]);
+            }
+            else{
+                forceMatrix[x][y] = 0;
+            }
+            std::cout << forceMatrix[x][y] << std::endl; // Printing to make sure this is calculating force correctly.
+        }
+    }
+
     return 0;
 }
