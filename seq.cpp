@@ -5,6 +5,8 @@
 #include <math.h>
 #include "body.cpp"
 
+using namespace std::chrono;
+
 const double GRAVITY = 0.000000000066742;
 
 struct float2 {
@@ -72,24 +74,31 @@ void calcAccelerations(std::vector<std::vector<double> > &accelMatrix_x,
     // Iterate through each pair of bodies and calculate the acceleration
     for (int x = 0; x < bodies.size(); x++)
     {
-        for (int y = x+1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
+        for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
         {
             Body a = bodies[x];
             Body b = bodies[y];
+            
+            std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
+            std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
+
             float2 f = calcForce(a, b);
 
             // Store the acceleration of x in [x][y]
             accelMatrix_x[x][y] = f.x / a.mass;
             accelMatrix_y[x][y] = f.y / a.mass;
             // Store the acceleration of y in [y][x]
-            accelMatrix_x[y][x] = f.x / b.mass;
-            accelMatrix_y[y][x] = f.y / b.mass;
+            accelMatrix_x[y][x] = -1 * f.x / b.mass;
+            accelMatrix_y[y][x] = -1 * f.y / b.mass;
             
             // Printing to make sure this is calculating force correctly.
-            // std::cout << accelMatrix_x[x][y] << std::endl; 
-            // std::cout << accelMatrix_y[x][y] << std::endl;
-            // std::cout << accelMatrix_x[y][x] << std::endl;
-            // std::cout << accelMatrix_y[y][x] << std::endl;
+            std::cout << accelMatrix_x[x][y] << std::endl;
+            std::cout << accelMatrix_y[x][y] << std::endl;
+            std::cout << accelMatrix_x[y][x] << std::endl;
+            std::cout << accelMatrix_y[y][x] << std::endl;
+
+            bodies[x] = a;
+            bodies[y] = b;
         }
     }
 }
@@ -114,11 +123,25 @@ void integrateStep(std::vector<std::vector<double> > &accelMatrix_x,
         a.pos_y += a.vel_y * deltaTime;
         
         // Testing
-        std::cout << a.pos_x  << std::endl; 
-        std::cout << a.pos_y << std::endl;
+        // std::cout << a.pos_x  << std::endl; 
+        // std::cout << a.pos_y << std::endl;
 
         bodies[x] = a;
     }
+}
+
+int check_intersection(int x1, int y1, int x2,
+           int y2, int r1, int r2)
+{
+    int distSq = (x1 - x2) * (x1 - x2) +
+                 (y1 - y2) * (y1 - y2);
+    int radSumSq = (r1 + r2) * (r1 + r2);
+    if (distSq == radSumSq)
+        return 1; // Circles touch each other
+    else if (distSq > radSumSq)
+        return -1; // Circles do not touch each other
+    else
+        return 0; // Circles intersect each other
 }
 
 bool collisionTest(std::vector<Body> &bodies, int duration) 
@@ -130,26 +153,40 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
     std::vector<std::vector<double> > accelMatrix_x(bodies.size(), std::vector<double>(bodies.size()));
     std::vector<std::vector<double> > accelMatrix_y(bodies.size(), std::vector<double>(bodies.size()));
 
+    // Initial state viz
+    // visualize(bodies);
+
     while (!collisionDetected && (timestepCounter < duration))
     {
         integrateStep(accelMatrix_x, accelMatrix_y, bodies, deltaTime);
+        // Visualize
+        // visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane
         
         // Check to see if any bodies have the same position
         for (int x = 0; x < bodies.size(); x++)
         {
-            for (int y = x+1; y < bodies.size(); y++) // only need to check each combination once, and don't need to check with itself
+            for (int y = x + 1; y < bodies.size(); y++)
             {
-// TODO check if bodies overlap using radius of each
-                if((bodies[x].pos_x == bodies[y].pos_x) && (bodies[x].pos_x == bodies[y].pos_x))
+                Body a = bodies[x];
+                Body b = bodies[y];
+                std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
+                std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
+
+                if(check_intersection(a.pos_x, a.pos_y, b.pos_x, b.pos_y, a.radius, b.radius) != -1) // When the circles are not disjoint
                 {
                     collisionDetected = true;
-                    bodies[x].hasCollided = true;
-                    bodies[y].hasCollided = true;
+                    a.hasCollided = true;
+                    b.hasCollided = true;
+                    bodies[x] = a;
+                    bodies[y] = b;
                 }
             }
         }
         // Add time to the timestep counter
-        timestepCounter += 1;
+        timestepCounter += deltaTime;
+    }
+    if (collisionDetected) {
+        std::cout << "Collision occurred after " << timestepCounter / (60.0 * 60 * 24) << " days" << std::endl;
     }
     return collisionDetected;
 }
@@ -181,13 +218,25 @@ int main(int argc, char **argv) {
     
     // Take in time duration from the user
     int duration;
-    std::cout << "Enter the number of years you would like to test: " << std::endl;
+    std::cout << "Enter the number of years you would like to test: ";
     std::cin >> duration;
 
-    duration = duration * 365; // change duration to days
+    duration = duration * 365 * 24 * 60 * 60; // change duration to seconds
 
+    auto start = high_resolution_clock::now();
     bool collision = collisionTest(bodies, duration);
-    std::cout << collision << std::endl;
+    auto stop = high_resolution_clock::now();
+
+    auto execTime = duration_cast<microseconds>(stop - start);
+
+    std::cout << "Time taken by function: "
+         << execTime.count() << " microseconds" << std::endl;
+    
+    if(collision == 1) {
+        std::cout << "There was a collision" << std::endl;
+    } else {
+        std::cout << "There was no collision" << std::endl;
+    }
 
     return 0;
 }
