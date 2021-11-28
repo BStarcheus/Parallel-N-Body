@@ -75,9 +75,11 @@ void calcAccelerations(std::vector<std::vector<double> > &accelMatrix_x,
     // Iterate through each pair of bodies and calculate the acceleration
     for (int x = 0; x < bodies.size(); x++)
     {
-        for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
+        Body a = bodies[x];
+	        
+
+	for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
         {
-            Body a = bodies[x];
             Body b = bodies[y];
             
             std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
@@ -192,6 +194,17 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
     return collisionDetected;
 }
 
+
+void updatePlot(std::vector<float> &x, 
+		std::vector<float> &y,
+		std::vector<Body> &bodies) {
+    for (int i = 0; i < bodies.size(); i++) {
+        x.push_back(bodies[i].pos_x);
+        y.push_back(bodies[i].pos_y);
+    } 
+}
+
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         std::cout << "Missing required filename argument" << std::endl;
@@ -207,6 +220,8 @@ int main(int argc, char **argv) {
     std::vector<float> pos_y;
     std::vector<float> vel_x;
     std::vector<float> vel_y;
+    std::vector<float> plot_x = new vector<float>;
+    std::vector<float> plot_y = new vector<float>;
 
     // Load initial state of bodies into separate vectors for each type of data
     readInitStateFile(filename, name, mass, rad, pos_x, pos_y, vel_x, vel_y);
