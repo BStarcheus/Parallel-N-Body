@@ -18,6 +18,7 @@ struct float2 {
 
 void readInitStateFile(std::string filename,
                        std::vector<std::string> &name,
+		       std::vector<std::string> &color,
                        std::vector<float> &mass,
                        std::vector<float> &rad,
                        std::vector<float> &pos_x,
@@ -31,6 +32,9 @@ void readInitStateFile(std::string filename,
 
     while (std::getline(file, elem, ',')) {
         name.push_back(elem);
+
+	std::getline(file, elem, ',');
+	color.push_back(elem);
 
         std::getline(file, elem, ',');
         mass.push_back(std::stof(elem));
@@ -153,6 +157,8 @@ void visualize(std::vector<Body> &bodies) {
     for (int i = 0; i < bodies.size(); i++) {
 	bodies[i].plot_x.push_back(bodies[i].pos_x);
 	bodies[i].plot_y.push_back(bodies[i].pos_y);
+	// This is redundant but makes calling scatter() easier
+	bodies[i].colors.push_back(bodies[i].color);
     }
 }
 
@@ -241,7 +247,7 @@ void plotBodies(std::vector<Body> &bodies) {
 
     for (int i = 0; i < bodies.size(); i++) {
         std::cout << "bodies[i].plot_x: " << bodies[i].plot_x[1] << std::endl; 	
-        matplotlibcpp::scatter(bodies[i].plot_x, bodies[i].plot_y, bodies[i].radius);
+        matplotlibcpp::scatter_colored(bodies[i].plot_x, bodies[i].plot_y, bodies[i].colors, bodies[i].radius);
     } 
 
     matplotlibcpp::save("plot.pdf");
@@ -257,6 +263,7 @@ int main(int argc, char **argv) {
     std::string filename = argv[1];
     
     std::vector<std::string> name;
+    std::vector<std::string> color;
     std::vector<float> mass;
     std::vector<float> rad;
     std::vector<float> pos_x;
@@ -265,12 +272,12 @@ int main(int argc, char **argv) {
     std::vector<float> vel_y;
 
     // Load initial state of bodies into separate vectors for each type of data
-    readInitStateFile(filename, name, mass, rad, pos_x, pos_y, vel_x, vel_y);
+    readInitStateFile(filename, name, color, mass, rad, pos_x, pos_y, vel_x, vel_y);
 
     std::vector<Body> bodies;
     // Populate body vector
     for (int i = 0; i < name.size(); i++) {
-        bodies.push_back(Body(name[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i], false));
+        bodies.push_back(Body(name[i], color[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i], false));
     }
     
     // Take in time duration from the user
