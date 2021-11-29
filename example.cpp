@@ -24,6 +24,7 @@ namespace plt = matplotlibcpp;
 int main() {
   std::cout << "Saving plot to file..."; // << std::end;
   plt::plot({1,3,2,4});
+  plt::plot({2,3,4,3});
   plt::save("plot.pdf");
 }
 

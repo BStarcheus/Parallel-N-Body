@@ -8,6 +8,8 @@ class Body{
         float pos_x, pos_y;
         float vel_x, vel_y;
         bool hasCollided; // boolean to keep track of which two bodies have collided
+	std::vector<float> plot_x;
+	std::vector<float> plot_y;
         
         Body(std::string n, float m, float r, float px, float py, float vx, float vy, bool hasCollided){
             name = n;
