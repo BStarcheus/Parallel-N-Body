@@ -178,6 +178,7 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
     while (!collisionDetected && (timestepCounter < duration))
     {
         integrateStep(accelMatrix_x, accelMatrix_y, bodies, deltaTime);
+
         // Visualize
         visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane    
 
@@ -187,20 +188,9 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
         {
             Body a = bodies[x];
 
-	    // To try to minimize the number of points we have, ease with testing
-	    // if (duration % 100 == 0) {
-    	    //     a.plot_x.push_back(a.pos_x);
-	    //     a.plot_y.push_back(a.pos_y);
-	    // }
-
             for (int y = x + 1; y < bodies.size(); y++)
             {
                 Body b = bodies[y];
-
-		// if (duration % 100 == 0) {
-		//     b.plot_x.push_back(b.pos_x);
-		//     b.plot_y.push_back(b.pos_y);
-		// }
 
                 std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
                 std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
@@ -225,26 +215,7 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
 }
 
 
-
-void printBodyPositions(std::vector<Body> &bodies) {
-    // for (int i = 0; i < bodies.size(); i++) {
-    for (int i = 0; i < 2; i++) {
-        std::cout << "bodies[" << i << "]: " << std::endl;
-
-	// for (int j = 0; i < bodies[i].plot_x.size(); j++) {
-	for (int j = 0; i < 5; j++) {
-	    std::cout << "x: " << bodies[i].plot_x[j] << std::endl;
-	    std::cout << "y: " << bodies[i].plot_y[j] << std::endl;
-	}
-    }
-}
-
-
 void plotBodies(std::vector<Body> &bodies) {
-    // for (int i = 0; i < bodies.size(); i++) {
-
-    //printBodyPositions(bodies);
-
     for (int i = 0; i < bodies.size(); i++) {
         std::cout << "bodies[i].plot_x: " << bodies[i].plot_x[1] << std::endl; 	
         matplotlibcpp::scatter_colored(bodies[i].plot_x, bodies[i].plot_y, bodies[i].colors, bodies[i].radius);
@@ -302,7 +273,7 @@ int main(int argc, char **argv) {
         std::cout << "There was no collision" << std::endl;
     }
 
-    std::cout << "Plotting bodies..." << std::endl;
+    std::cout << "Plotting bodies and saving to plot.pdf" << std::endl;
     plotBodies(bodies);
 
     return 0;
