@@ -205,19 +205,34 @@ bool collisionTest(std::vector<std::string> &name,
     cudaMemcpy(d_dt, &deltaTime, sizeof(float), cudaMemcpyHostToDevice);
     */
 
-    thrust::device_vector<float> accelMatrix_x(mass.size() * mass.size());
-    thrust::device_vector<float> accelMatrix_y(mass.size() * mass.size());
-    float* d_accel_x_ptr = thrust::raw_pointer_cast(accelMatrix_x.data());
-    float* d_accel_y_ptr = thrust::raw_pointer_cast(accelMatrix_y.data());
+    thrust::device_vector<float> d_accel_x(mass.size() * mass.size());
+    thrust::device_vector<float> d_accel_y(mass.size() * mass.size());
+    float* d_accel_x_ptr = thrust::raw_pointer_cast(d_accel_x.data());
+    float* d_accel_y_ptr = thrust::raw_pointer_cast(d_accel_y.data());
 
     // Initial state viz
     // visualize(bodies);
 
     while (!collisionDetected && (timestepCounter < duration))
     {
-        // Temp grid sizes
         calcAccelerations<<<10, 10>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size());
+        thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());
+        thrust::copy(d_pos_y.begin(), d_pos_y.end(), pos_y.begin());
+        thrust::copy(d_vel_x.begin(), d_vel_x.end(), vel_x.begin());
+        thrust::copy(d_vel_y.begin(), d_vel_y.end(), vel_y.begin());
+        for (int i = 0; i < mass.size(); i++) {
+            std::cout << "Body " << name[i] << ": pos(" << pos_x[i] << "," << pos_y[i] << ") vel(" << vel_x[i] << "," << vel_y[i] << ")" << std::endl;
+        }
+        
+        
         integrateStep<<<1, 100>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size(), deltaTime);
+        thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());
+        thrust::copy(d_pos_y.begin(), d_pos_y.end(), pos_y.begin());
+        thrust::copy(d_vel_x.begin(), d_vel_x.end(), vel_x.begin());
+        thrust::copy(d_vel_y.begin(), d_vel_y.end(), vel_y.begin());
+        for (int i = 0; i < mass.size(); i++) {
+            std::cout << "Body " << name[i] << ": pos(" << pos_x[i] << "," << pos_y[i] << ") vel(" << vel_x[i] << "," << vel_y[i] << ")" << std::endl;
+        }
         
         // Visualize
         // visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane
