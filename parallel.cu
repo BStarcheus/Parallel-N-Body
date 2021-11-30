@@ -93,6 +93,11 @@ __global__ void calcAccelerations(float* accelMatrix_x,
     while (r < sz) {
         c = threadIdx.y + blockIdx.y * blockDim.y;
         while (c < sz) {
+            if (r == c) {
+                c += blockDim.y * gridDim.y;
+                continue;
+            }
+            
             int offset = c + r * blockDim.x * gridDim.x;
             
             float2 f = calcForce(mass[r], pos_x[r], pos_y[r], mass[c], pos_x[c], pos_y[c]);
@@ -159,6 +164,10 @@ __global__ void checkCollisions(bool* hasCollided,
     while (r < sz) {
         c = threadIdx.y + blockIdx.y * blockDim.y;
         while (c < sz) {
+            if (r == c) {
+                c += blockDim.y * gridDim.y;
+                continue;
+            }
             if (checkIntersection(pos_x[r], pos_y[r], rad[r], pos_x[c], pos_y[c], rad[c]) != -1) {
                 offset = c + r * blockDim.x * gridDim.x;
                 hasCollided[offset] = true;
@@ -198,12 +207,6 @@ bool collisionTest(std::vector<std::string> &name,
     bool collisionDetected = false;
     int timestepCounter = 0;
     float deltaTime = 0.01 * 24 * 60 * 60; // 1% of a day in seconds
-    // Copy to device
-    /* maybe don't need
-    float* d_dt;
-    cudaMalloc((void**)&d_dt, sizeof(float));
-    cudaMemcpy(d_dt, &deltaTime, sizeof(float), cudaMemcpyHostToDevice);
-    */
 
     thrust::device_vector<float> d_accel_x(mass.size() * mass.size());
     thrust::device_vector<float> d_accel_y(mass.size() * mass.size());
@@ -213,9 +216,11 @@ bool collisionTest(std::vector<std::string> &name,
     // Initial state viz
     // visualize(bodies);
 
+    dim3 threads(10,10);
+
     while (!collisionDetected && (timestepCounter < duration))
     {
-        calcAccelerations<<<10, 10>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size());
+        calcAccelerations<<<1, threads>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size());
         thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());
         thrust::copy(d_pos_y.begin(), d_pos_y.end(), pos_y.begin());
         thrust::copy(d_vel_x.begin(), d_vel_x.end(), vel_x.begin());
@@ -251,26 +256,6 @@ bool collisionTest(std::vector<std::string> &name,
             // Add time to the timestep counter
             timestepCounter += deltaTime;
         }
-        
-        // for (int x = 0; x < bodies.size(); x++)
-        // {
-        //     for (int y = x + 1; y < bodies.size(); y++)
-        //     {
-        //         Body a = bodies[x];
-        //         Body b = bodies[y];
-        //         std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
-        //         std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
-
-        //         if(checkIntersection(a.pos_x, a.pos_y, a.radius, b.pos_x, b.pos_y, b.radius) != -1) // When the circles are not disjoint
-        //         {
-        //             collisionDetected = true;
-        //             a.hasCollided = true;
-        //             b.hasCollided = true;
-        //             bodies[x] = a;
-        //             bodies[y] = b;
-        //         }
-        //     }
-        // }
     }
     if (collisionDetected) {
         std::cout << "Collision occurred after " << timestepCounter / (60.0 * 60 * 24) << " days" << std::endl;
