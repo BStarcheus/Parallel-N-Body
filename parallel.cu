@@ -79,8 +79,8 @@ __device__ float2 calcForce(float a_mass,
     return f;
 }
 
-__global__ void calcAccelerations(float* accelMatrix_x, 
-                                  float* accelMatrix_y, 
+__global__ void calcAccelerations(float* accel_x, 
+                                  float* accel_y, 
                                   float* mass,
                                   float* rad,
                                   float* pos_x,
@@ -98,13 +98,13 @@ __global__ void calcAccelerations(float* accelMatrix_x,
                 continue;
             }
             
-            int offset = c + r * blockDim.x * gridDim.x;
+            int offset = c + r * sz;
             
             float2 f = calcForce(mass[r], pos_x[r], pos_y[r], mass[c], pos_x[c], pos_y[c]);
-
+            
             // Store the acceleration of body a in [r][c]
-            accelMatrix_x[offset] = f.x / mass[r];
-            accelMatrix_y[offset] = f.y / mass[r];
+            accel_x[offset] = f.x / mass[r];
+            accel_y[offset] = f.y / mass[r];
             
             c += blockDim.y * gridDim.y;
         }
@@ -112,8 +112,8 @@ __global__ void calcAccelerations(float* accelMatrix_x,
     }
 }
 
-__global__ void integrateStep(float* accelMatrix_x, 
-                              float* accelMatrix_y, 
+__global__ void integrateStep(float* accel_x, 
+                              float* accel_y, 
                               float* mass,
                               float* rad,
                               float* pos_x,
@@ -124,14 +124,15 @@ __global__ void integrateStep(float* accelMatrix_x,
                               int deltaTime) {
     int r = threadIdx.x + blockIdx.x * blockDim.x;
 	while (r < sz) {
-	    float ax, ay;
+	    float ax = 0;
+	    float ay = 0;
 	    for (int c = 0; c < sz; c++) {
-            ax += accelMatrix_x[c + r * sz];
-            ay += accelMatrix_y[c + r * sz];
+            ax += accel_x[c + r * sz];
+            ay += accel_y[c + r * sz];
         }
         // Update velocity
-        vel_x[r] = ax * deltaTime;
-        vel_y[r] = ay * deltaTime;
+        vel_x[r] += ax * deltaTime;
+        vel_y[r] += ay * deltaTime;
 	    
 	    // Update position
         pos_x[r] += vel_x[r] * deltaTime;
@@ -141,17 +142,18 @@ __global__ void integrateStep(float* accelMatrix_x,
 	}
 }
 
-__device__ int checkIntersection(int x1, int y1, int r1, int x2, int y2, int r2)
+__device__ int checkIntersection(float x1, float y1, float r1, float x2, float y2, float r2)
 {
-    int distSq = (x1 - x2) * (x1 - x2) +
+    float distSq = (x1 - x2) * (x1 - x2) +
                  (y1 - y2) * (y1 - y2);
-    int radSumSq = (r1 + r2) * (r1 + r2);
-    if (distSq == radSumSq)
-        return 1; // Circles touch each other
-    else if (distSq > radSumSq)
+    float radSumSq = (r1 + r2) * (r1 + r2);
+    if (distSq == radSumSq) {
+        return 1; // Circles touch each other        
+    } else if (distSq > radSumSq) {
         return -1; // Circles do not touch each other
-    else
+    } else {
         return 0; // Circles intersect each other
+    }
 }
 
 __global__ void checkCollisions(bool* hasCollided,
@@ -169,7 +171,7 @@ __global__ void checkCollisions(bool* hasCollided,
                 continue;
             }
             if (checkIntersection(pos_x[r], pos_y[r], rad[r], pos_x[c], pos_y[c], rad[c]) != -1) {
-                offset = c + r * blockDim.x * gridDim.x;
+                offset = c + r * sz;
                 hasCollided[offset] = true;
             }
             
@@ -187,7 +189,7 @@ bool collisionTest(std::vector<std::string> &name,
                    thrust::host_vector<float> &pos_y,
                    thrust::host_vector<float> &vel_x,
                    thrust::host_vector<float> &vel_y,
-                   int duration) 
+                   float duration) 
 {
     // Transfer to GPU
     thrust::device_vector<float> d_mass = mass;
@@ -206,10 +208,12 @@ bool collisionTest(std::vector<std::string> &name,
     
     bool collisionDetected = false;
     int timestepCounter = 0;
-    float deltaTime = 0.01 * 24 * 60 * 60; // 1% of a day in seconds
+    float deltaTime = 1;//0.01 * 24 * 60 * 60; // 1% of a day in seconds
 
-    thrust::device_vector<float> d_accel_x(mass.size() * mass.size());
-    thrust::device_vector<float> d_accel_y(mass.size() * mass.size());
+    thrust::host_vector<float> accel_x(mass.size() * mass.size());
+    thrust::host_vector<float> accel_y(mass.size() * mass.size());
+    thrust::device_vector<float> d_accel_x = accel_x;
+    thrust::device_vector<float> d_accel_y = accel_y;
     float* d_accel_x_ptr = thrust::raw_pointer_cast(d_accel_x.data());
     float* d_accel_y_ptr = thrust::raw_pointer_cast(d_accel_y.data());
 
@@ -221,14 +225,14 @@ bool collisionTest(std::vector<std::string> &name,
     while (!collisionDetected && (timestepCounter < duration))
     {
         calcAccelerations<<<1, threads>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size());
-        thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());
-        thrust::copy(d_pos_y.begin(), d_pos_y.end(), pos_y.begin());
-        thrust::copy(d_vel_x.begin(), d_vel_x.end(), vel_x.begin());
-        thrust::copy(d_vel_y.begin(), d_vel_y.end(), vel_y.begin());
-        for (int i = 0; i < mass.size(); i++) {
-            std::cout << "Body " << name[i] << ": pos(" << pos_x[i] << "," << pos_y[i] << ") vel(" << vel_x[i] << "," << vel_y[i] << ")" << std::endl;
+        thrust::copy(d_accel_x.begin(), d_accel_x.end(), accel_x.begin());
+        thrust::copy(d_accel_y.begin(), d_accel_y.end(), accel_y.begin());
+        for (int r = 0; r < mass.size(); r++) {
+            for (int c = 0; c < mass.size(); c++) {
+                std::cout << "(" << accel_x[c + r * mass.size()] << "," << accel_y[c + r * mass.size()] << ") ";
+            }
+            std::cout << std::endl;
         }
-        
         
         integrateStep<<<1, 100>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size(), deltaTime);
         thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());
@@ -238,6 +242,7 @@ bool collisionTest(std::vector<std::string> &name,
         for (int i = 0; i < mass.size(); i++) {
             std::cout << "Body " << name[i] << ": pos(" << pos_x[i] << "," << pos_y[i] << ") vel(" << vel_x[i] << "," << vel_y[i] << ")" << std::endl;
         }
+        std::cout << std::endl;
         
         // Visualize
         // visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane
@@ -248,8 +253,14 @@ bool collisionTest(std::vector<std::string> &name,
         thrust::device_vector<bool> d_hasCollided = hasCollided;
         bool* d_hasCollided_ptr = thrust::raw_pointer_cast(d_hasCollided.data());
         
-        checkCollisions<<<10,10>>>(d_hasCollided_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, mass.size());
+        checkCollisions<<<1,threads>>>(d_hasCollided_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, mass.size());
         int numColl = thrust::reduce(d_hasCollided.begin(), d_hasCollided.end(), 0);
+        
+        for (int j = 0; j < mass.size(); j++) {
+            if(hasCollided[j] == true) {
+                std::cout << name[j] << std::endl;
+            }
+        }
         if (numColl > 0) {
             collisionDetected = true;
         } else {
@@ -281,18 +292,11 @@ int main(int argc, char **argv) {
 
     // Load initial state of bodies into separate vectors for each type of data
     readInitStateFile(filename, name, mass, rad, pos_x, pos_y, vel_x, vel_y);
-
-    // thrust::host_vector<Body> h_bodies;
-    // // Populate body vector
-    // for (int i = 0; i < name.size(); i++) {
-    //     h_bodies.push_back(Body(name[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i], false));
-    // }
     
     // Take in time duration from the user
-    int duration;
+    float duration;
     std::cout << "Enter the number of years you would like to test: ";
     std::cin >> duration;
-
     duration = duration * 365 * 24 * 60 * 60; // change duration to seconds
 
     //auto start = high_resolution_clock::now();
