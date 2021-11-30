@@ -299,13 +299,18 @@ int main(int argc, char **argv) {
     std::cin >> duration;
     duration = duration * 365 * 24 * 60 * 60; // change duration to seconds
 
-    //auto start = high_resolution_clock::now();
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
     bool collision = collisionTest(name, mass, rad, pos_x, pos_y, vel_x, vel_y, duration);
-    //auto stop = high_resolution_clock::now();
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
 
-    //auto execTime = duration_cast<microseconds>(stop - start);
-
-    //std::cout << "Time taken by function: " << execTime.count() << " microseconds" << std::endl;
+    std::cout << "Time taken by function: " << milliseconds << " milliseconds" << std::endl;
     
     if(collision == 1) {
         std::cout << "There was a collision" << std::endl;
