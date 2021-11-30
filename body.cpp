@@ -9,7 +9,7 @@ class Body{
         float vel_x, vel_y;
         bool hasCollided; // boolean to keep track of which two bodies have collided
         
-        Body(std::string n, float m, float r, float px, float py, float vx, float vy, bool hasCollided){
+        Body(std::string n, float m, float r, float px, float py, float vx, float vy, bool hasCollided) {
             name = n;
             mass = m;
             radius = r;
