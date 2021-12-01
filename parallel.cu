@@ -24,7 +24,7 @@ GPU
 */
 
 
-const double GRAVITY = 0.000000000066742;
+const float GRAVITY = 0.000000000066742;
 
 void readInitStateFile(std::string filename,
                        std::vector<std::string> &name,
@@ -82,7 +82,6 @@ __device__ float2 calcForce(float a_mass,
 __global__ void calcAccelerations(float* accel_x, 
                                   float* accel_y, 
                                   float* mass,
-                                  float* rad,
                                   float* pos_x,
                                   float* pos_y,
                                   float* vel_x,
@@ -113,9 +112,7 @@ __global__ void calcAccelerations(float* accel_x,
 }
 
 __global__ void integrateStep(float* accel_x, 
-                              float* accel_y, 
-                              float* mass,
-                              float* rad,
+                              float* accel_y,
                               float* pos_x,
                               float* pos_y,
                               float* vel_x,
@@ -145,7 +142,7 @@ __global__ void integrateStep(float* accel_x,
 __device__ int checkIntersection(float x1, float y1, float r1, float x2, float y2, float r2)
 {
     float distSq = (x1 - x2) * (x1 - x2) +
-                 (y1 - y2) * (y1 - y2);
+                   (y1 - y2) * (y1 - y2);
     float radSumSq = (r1 + r2) * (r1 + r2);
     if (distSq == radSumSq) {
         return 1; // Circles touch each other        
@@ -224,7 +221,7 @@ bool collisionTest(std::vector<std::string> &name,
 
     while (!collisionDetected && (timestepCounter < duration))
     {
-        calcAccelerations<<<1, threads>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size());
+        calcAccelerations<<<1, threads>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size());
         thrust::copy(d_accel_x.begin(), d_accel_x.end(), accel_x.begin());
         thrust::copy(d_accel_y.begin(), d_accel_y.end(), accel_y.begin());
         for (int r = 0; r < mass.size(); r++) {
@@ -234,7 +231,7 @@ bool collisionTest(std::vector<std::string> &name,
             std::cout << std::endl;
         }
         
-        integrateStep<<<1, 100>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size(), deltaTime);
+        integrateStep<<<1, 100>>>(d_accel_x_ptr, d_accel_y_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size(), deltaTime);
         thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());
         thrust::copy(d_pos_y.begin(), d_pos_y.end(), pos_y.begin());
         thrust::copy(d_vel_x.begin(), d_vel_x.end(), vel_x.begin());

@@ -9,7 +9,7 @@
 
 using namespace std::chrono;
 
-const double GRAVITY = 0.000000000066742;
+const float GRAVITY = 0.000000000066742;
 
 struct float2 {
     float x;
@@ -18,7 +18,7 @@ struct float2 {
 
 void readInitStateFile(std::string filename,
                        std::vector<std::string> &name,
-		       std::vector<std::string> &color,
+                       std::vector<std::string> &color,
                        std::vector<float> &mass,
                        std::vector<float> &rad,
                        std::vector<float> &pos_x,
@@ -33,8 +33,8 @@ void readInitStateFile(std::string filename,
     while (std::getline(file, elem, ',')) {
         name.push_back(elem);
 
-	std::getline(file, elem, ',');
-	color.push_back(elem);
+        std::getline(file, elem, ',');
+        color.push_back(elem);
 
         std::getline(file, elem, ',');
         mass.push_back(std::stof(elem));
@@ -56,12 +56,7 @@ void readInitStateFile(std::string filename,
     }
 }
 
-double velocity(float d, float t) 
-{
-    return d / t;
-}
-
-double distance(float x1, float y1, float x2, float y2)
+float distance(float x1, float y1, float x2, float y2)
 {
     return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
 }
@@ -69,21 +64,20 @@ double distance(float x1, float y1, float x2, float y2)
 // F = G * m1 * m2 * r / (||r|| ^3)
 // Returns each force component, x and y
 float2 calcForce(Body a, Body b) {
-    double gForce = (GRAVITY * a.mass * b.mass) / (pow(distance(a.pos_x, a.pos_y, b.pos_x, b.pos_y), 3));
+    float gForce = (GRAVITY * a.mass * b.mass) / (pow(distance(a.pos_x, a.pos_y, b.pos_x, b.pos_y), 3));
     float2 f = {gForce * (b.pos_x - a.pos_x), gForce * (b.pos_y - a.pos_y)};
     return f;
 }
 
-void calcAccelerations(std::vector<std::vector<double> > &accelMatrix_x, 
-                       std::vector<std::vector<double> > &accelMatrix_y, 
+void calcAccelerations(std::vector<std::vector<float> > &accelMatrix_x, 
+                       std::vector<std::vector<float> > &accelMatrix_y, 
                        std::vector<Body> &bodies) {
     // Iterate through each pair of bodies and calculate the acceleration
     for (int x = 0; x < bodies.size(); x++)
     {
         Body a = bodies[x];
-	        
 
-	for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
+    for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
         {
             Body b = bodies[y];
             
@@ -111,8 +105,8 @@ void calcAccelerations(std::vector<std::vector<double> > &accelMatrix_x,
     }
 }
 
-void integrateStep(std::vector<std::vector<double> > &accelMatrix_x, 
-                   std::vector<std::vector<double> > &accelMatrix_y, 
+void integrateStep(std::vector<std::vector<float> > &accelMatrix_x, 
+                   std::vector<std::vector<float> > &accelMatrix_y, 
                    std::vector<Body> &bodies,
                    int deltaTime) {
     
@@ -138,12 +132,11 @@ void integrateStep(std::vector<std::vector<double> > &accelMatrix_x,
     }
 }
 
-int check_intersection(int x1, int y1, int x2,
-           int y2, int r1, int r2)
+int check_intersection(float x1, float y1, float r1, float x2, float y2, float r2)
 {
-    int distSq = (x1 - x2) * (x1 - x2) +
-                 (y1 - y2) * (y1 - y2);
-    int radSumSq = (r1 + r2) * (r1 + r2);
+    float distSq = (x1 - x2) * (x1 - x2) +
+                   (y1 - y2) * (y1 - y2);
+    float radSumSq = (r1 + r2) * (r1 + r2);
     if (distSq == radSumSq)
         return 1; // Circles touch each other
     else if (distSq > radSumSq)
@@ -155,10 +148,10 @@ int check_intersection(int x1, int y1, int x2,
 
 void visualize(std::vector<Body> &bodies) {
     for (int i = 0; i < bodies.size(); i++) {
-	bodies[i].plot_x.push_back(bodies[i].pos_x);
-	bodies[i].plot_y.push_back(bodies[i].pos_y);
-	// This is redundant but makes calling scatter() easier
-	bodies[i].colors.push_back(bodies[i].color);
+    bodies[i].plot_x.push_back(bodies[i].pos_x);
+    bodies[i].plot_y.push_back(bodies[i].pos_y);
+    // This is redundant but makes calling scatter() easier
+    bodies[i].colors.push_back(bodies[i].color);
     }
 }
 
@@ -169,8 +162,8 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
     int timestepCounter = 0;
     float deltaTime = 0.01 * 24 * 60 * 60; // 1% of a day in seconds
 
-    std::vector<std::vector<double> > accelMatrix_x(bodies.size(), std::vector<double>(bodies.size()));
-    std::vector<std::vector<double> > accelMatrix_y(bodies.size(), std::vector<double>(bodies.size()));
+    std::vector<std::vector<float> > accelMatrix_x(bodies.size(), std::vector<float>(bodies.size()));
+    std::vector<std::vector<float> > accelMatrix_y(bodies.size(), std::vector<float>(bodies.size()));
 
     // Initial state viz
     visualize(bodies);
@@ -195,7 +188,7 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
                 std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
                 std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
 
-                if(check_intersection(a.pos_x, a.pos_y, b.pos_x, b.pos_y, a.radius, b.radius) != -1) // When the circles are not disjoint
+                if(check_intersection(a.pos_x, a.pos_y, a.radius, b.pos_x, b.pos_y, b.radius) != -1) // When the circles are not disjoint
                 {
                     collisionDetected = true;
                     a.hasCollided = true;
@@ -252,10 +245,9 @@ int main(int argc, char **argv) {
     }
     
     // Take in time duration from the user
-    int duration;
+    float duration;
     std::cout << "Enter the number of years you would like to test: ";
     std::cin >> duration;
-
     duration = duration * 365 * 24 * 60 * 60; // change duration to seconds
 
     auto start = high_resolution_clock::now();
