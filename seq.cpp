@@ -4,6 +4,8 @@
 #include <string>
 #include <math.h>
 #include "body.cpp"
+#include <chrono>
+#include "matplotlib.h"
 
 using namespace std::chrono;
 
@@ -16,6 +18,7 @@ struct float2 {
 
 void readInitStateFile(std::string filename,
                        std::vector<std::string> &name,
+		       std::vector<std::string> &color,
                        std::vector<float> &mass,
                        std::vector<float> &rad,
                        std::vector<float> &pos_x,
@@ -29,6 +32,9 @@ void readInitStateFile(std::string filename,
 
     while (std::getline(file, elem, ',')) {
         name.push_back(elem);
+
+	std::getline(file, elem, ',');
+	color.push_back(elem);
 
         std::getline(file, elem, ',');
         mass.push_back(std::stof(elem));
@@ -74,9 +80,11 @@ void calcAccelerations(std::vector<std::vector<double> > &accelMatrix_x,
     // Iterate through each pair of bodies and calculate the acceleration
     for (int x = 0; x < bodies.size(); x++)
     {
-        for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
+        Body a = bodies[x];
+	        
+
+	for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
         {
-            Body a = bodies[x];
             Body b = bodies[y];
             
             std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
@@ -144,6 +152,17 @@ int check_intersection(int x1, int y1, int x2,
         return 0; // Circles intersect each other
 }
 
+
+void visualize(std::vector<Body> &bodies) {
+    for (int i = 0; i < bodies.size(); i++) {
+	bodies[i].plot_x.push_back(bodies[i].pos_x);
+	bodies[i].plot_y.push_back(bodies[i].pos_y);
+	// This is redundant but makes calling scatter() easier
+	bodies[i].colors.push_back(bodies[i].color);
+    }
+}
+
+
 bool collisionTest(std::vector<Body> &bodies, int duration) 
 {
     bool collisionDetected = false;
@@ -154,21 +173,25 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
     std::vector<std::vector<double> > accelMatrix_y(bodies.size(), std::vector<double>(bodies.size()));
 
     // Initial state viz
-    // visualize(bodies);
+    visualize(bodies);
 
     while (!collisionDetected && (timestepCounter < duration))
     {
         integrateStep(accelMatrix_x, accelMatrix_y, bodies, deltaTime);
+
         // Visualize
-        // visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane
-        
+        visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane    
+
+  
         // Check to see if any bodies have the same position
         for (int x = 0; x < bodies.size(); x++)
         {
+            Body a = bodies[x];
+
             for (int y = x + 1; y < bodies.size(); y++)
             {
-                Body a = bodies[x];
                 Body b = bodies[y];
+
                 std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
                 std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
 
@@ -191,6 +214,17 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
     return collisionDetected;
 }
 
+
+void plotBodies(std::vector<Body> &bodies) {
+    for (int i = 0; i < bodies.size(); i++) {
+        std::cout << "bodies[i].plot_x: " << bodies[i].plot_x[1] << std::endl; 	
+        matplotlibcpp::scatter_colored(bodies[i].plot_x, bodies[i].plot_y, bodies[i].colors, bodies[i].radius);
+    } 
+
+    matplotlibcpp::save("plot.pdf");
+}
+
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         std::cout << "Missing required filename argument" << std::endl;
@@ -200,6 +234,7 @@ int main(int argc, char **argv) {
     std::string filename = argv[1];
     
     std::vector<std::string> name;
+    std::vector<std::string> color;
     std::vector<float> mass;
     std::vector<float> rad;
     std::vector<float> pos_x;
@@ -208,12 +243,12 @@ int main(int argc, char **argv) {
     std::vector<float> vel_y;
 
     // Load initial state of bodies into separate vectors for each type of data
-    readInitStateFile(filename, name, mass, rad, pos_x, pos_y, vel_x, vel_y);
+    readInitStateFile(filename, name, color, mass, rad, pos_x, pos_y, vel_x, vel_y);
 
     std::vector<Body> bodies;
     // Populate body vector
     for (int i = 0; i < name.size(); i++) {
-        bodies.push_back(Body(name[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i], false));
+        bodies.push_back(Body(name[i], color[i], mass[i], rad[i], pos_x[i], pos_y[i], vel_x[i], vel_y[i], false));
     }
     
     // Take in time duration from the user
@@ -237,6 +272,9 @@ int main(int argc, char **argv) {
     } else {
         std::cout << "There was no collision" << std::endl;
     }
+
+    std::cout << "Plotting bodies and saving to plot.pdf" << std::endl;
+    plotBodies(bodies);
 
     return 0;
 }
