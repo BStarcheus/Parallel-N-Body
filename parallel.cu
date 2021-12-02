@@ -242,10 +242,10 @@ bool collisionTest(std::vector<std::string> &name,
         thrust::copy(d_pos_y.begin(), d_pos_y.end(), pos_y.begin());
         thrust::copy(d_vel_x.begin(), d_vel_x.end(), vel_x.begin());
         thrust::copy(d_vel_y.begin(), d_vel_y.end(), vel_y.begin());
-        for (int i = 0; i < mass.size(); i++) {
-            std::cout << "Body " << name[i] << ": pos(" << pos_x[i] << "," << pos_y[i] << ") vel(" << vel_x[i] << "," << vel_y[i] << ")" << std::endl;
-        }
-        std::cout << std::endl;
+        // for (int i = 0; i < mass.size(); i++) {
+        //     std::cout << "Body " << name[i] << ": pos(" << pos_x[i] << "," << pos_y[i] << ") vel(" << vel_x[i] << "," << vel_y[i] << ")" << std::endl;
+        // }
+        // std::cout << std::endl;
         
         // Visualize
         // visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane

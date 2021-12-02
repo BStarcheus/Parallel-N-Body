@@ -173,10 +173,10 @@ bool collisionTest(std::vector<Body> &bodies, float duration)
     while (!collisionDetected && (timestepCounter < duration))
     {
         integrateStep(accelMatrix_x, accelMatrix_y, bodies, deltaTime);
-        for (int i = 0; i < bodies.size(); i++) {
-            std::cout << "Body " << bodies[i].name << ": pos(" << bodies[i].pos_x << "," << bodies[i].pos_y << ") vel(" << bodies[i].vel_x << "," << bodies[i].vel_y << ")" << std::endl;
-        }
-        std::cout << std::endl;
+        // for (int i = 0; i < bodies.size(); i++) {
+        //     std::cout << "Body " << bodies[i].name << ": pos(" << bodies[i].pos_x << "," << bodies[i].pos_y << ") vel(" << bodies[i].vel_x << "," << bodies[i].vel_y << ")" << std::endl;
+        // }
+        // std::cout << std::endl;
 
         // Visualize
         visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane    
