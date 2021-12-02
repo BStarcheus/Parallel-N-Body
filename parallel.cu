@@ -228,12 +228,14 @@ bool collisionTest(std::vector<std::string> &name,
         calcAccelerations<<<1, threads>>>(d_accel_x_ptr, d_accel_y_ptr, d_mass_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size());
         thrust::copy(d_accel_x.begin(), d_accel_x.end(), accel_x.begin());
         thrust::copy(d_accel_y.begin(), d_accel_y.end(), accel_y.begin());
+        /*
         for (int r = 0; r < mass.size(); r++) {
             for (int c = 0; c < mass.size(); c++) {
                 std::cout << "(" << accel_x[c + r * mass.size()] << "," << accel_y[c + r * mass.size()] << ") ";
             }
             std::cout << std::endl;
         }
+        */
         
         integrateStep<<<1, 100>>>(d_accel_x_ptr, d_accel_y_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size(), deltaTime);
         thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());

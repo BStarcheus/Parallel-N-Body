@@ -80,10 +80,10 @@ void calcAccelerations(std::vector<std::vector<float> > &accelMatrix_x,
     for (int y = x + 1; y < bodies.size(); y++) // each iter will store calculate for x,y and y,x
         {
             Body b = bodies[y];
-            
+            /*
             std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
             std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
-
+            */
             float2 f = calcForce(a, b);
 
             // Store the acceleration of x in [x][y]
@@ -94,10 +94,12 @@ void calcAccelerations(std::vector<std::vector<float> > &accelMatrix_x,
             accelMatrix_y[y][x] = -1 * f.y / b.mass;
             
             // Printing to make sure this is calculating force correctly.
+            /*
             std::cout << accelMatrix_x[x][y] << std::endl;
             std::cout << accelMatrix_y[x][y] << std::endl;
             std::cout << accelMatrix_x[y][x] << std::endl;
             std::cout << accelMatrix_y[y][x] << std::endl;
+            */
 
             bodies[x] = a;
             bodies[y] = b;
@@ -160,7 +162,7 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
 {
     bool collisionDetected = false;
     int timestepCounter = 0;
-    float deltaTime = 0.01 * 24 * 60 * 60; // 1% of a day in seconds
+    float deltaTime = 1;
 
     std::vector<std::vector<float> > accelMatrix_x(bodies.size(), std::vector<float>(bodies.size()));
     std::vector<std::vector<float> > accelMatrix_y(bodies.size(), std::vector<float>(bodies.size()));
@@ -171,6 +173,9 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
     while (!collisionDetected && (timestepCounter < duration))
     {
         integrateStep(accelMatrix_x, accelMatrix_y, bodies, deltaTime);
+        for (int i = 0; i < bodies.size(); i++) {
+            std::cout << "Body " << bodies[i].name << ": pos(" << bodies[i].pos_x << "," << bodies[i].pos_y << ") vel(" << bodies[i].vel_x << "," << bodies[i].vel_y << ")" << std::endl;
+        }
 
         // Visualize
         visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane    
@@ -184,9 +189,6 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
             for (int y = x + 1; y < bodies.size(); y++)
             {
                 Body b = bodies[y];
-
-                std::cout << "Body " << a.name << ": " << a.pos_x << " " << a.pos_y << " " << a.vel_x << " " << a.vel_y << std::endl;
-                std::cout << "Body " << b.name << ": " << b.pos_x << " " << b.pos_y << " " << b.vel_x << " " << b.vel_y << std::endl;
 
                 if(check_intersection(a.pos_x, a.pos_y, a.radius, b.pos_x, b.pos_y, b.radius) != -1) // When the circles are not disjoint
                 {
@@ -210,7 +212,7 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
 
 void plotBodies(std::vector<Body> &bodies) {
     for (int i = 0; i < bodies.size(); i++) {
-        std::cout << "bodies[i].plot_x: " << bodies[i].plot_x[1] << std::endl; 	
+        //std::cout << "bodies[i].plot_x: " << bodies[i].plot_x[1] << std::endl; 	
         matplotlibcpp::scatter_colored(bodies[i].plot_x, bodies[i].plot_y, bodies[i].colors, bodies[i].radius);
     } 
 
