@@ -123,7 +123,7 @@ __global__ void integrateStep(float* accel_x,
                               float* vel_y,
                               int sz,
                               int deltaTime) {
-    int r = threadIdx.x + blockIdx.x * blockDim.x;
+    int r = threadIdx.x + blockIdx.x * blockDim.x + (threadIdx.y + blockIdx.y * blockDim.y) * blockDim.x * gridDim.x;
 	while (r < sz) {
 	    float ax = 0;
 	    float ay = 0;
@@ -221,7 +221,7 @@ bool collisionTest(std::vector<std::string> &name,
     // Initial state viz
     // visualize(bodies);
 
-    dim3 threads(10,10);
+    dim3 threads(32,32);
 
     while (!collisionDetected && (timestepCounter < duration))
     {
@@ -237,7 +237,7 @@ bool collisionTest(std::vector<std::string> &name,
         }
         */
         
-        integrateStep<<<1, 100>>>(d_accel_x_ptr, d_accel_y_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size(), deltaTime);
+        integrateStep<<<1, threads>>>(d_accel_x_ptr, d_accel_y_ptr, d_pos_x_ptr, d_pos_y_ptr, d_vel_x_ptr, d_vel_y_ptr, mass.size(), deltaTime);
         thrust::copy(d_pos_x.begin(), d_pos_x.end(), pos_x.begin());
         thrust::copy(d_pos_y.begin(), d_pos_y.end(), pos_y.begin());
         thrust::copy(d_vel_x.begin(), d_vel_x.end(), vel_x.begin());
