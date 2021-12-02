@@ -176,6 +176,7 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
         for (int i = 0; i < bodies.size(); i++) {
             std::cout << "Body " << bodies[i].name << ": pos(" << bodies[i].pos_x << "," << bodies[i].pos_y << ") vel(" << bodies[i].vel_x << "," << bodies[i].vel_y << ")" << std::endl;
         }
+        std::cout << std::endl;
 
         // Visualize
         visualize(bodies); // iterate through positions of bodies and display them on a coordinate plane    
@@ -201,7 +202,9 @@ bool collisionTest(std::vector<Body> &bodies, int duration)
             }
         }
         // Add time to the timestep counter
-        timestepCounter += deltaTime;
+        if (!collisionDetected) {
+            timestepCounter += deltaTime;
+        }
     }
     if (collisionDetected) {
         std::cout << "Collision occurred after " << timestepCounter / (60.0 * 60 * 24) << " days" << std::endl;

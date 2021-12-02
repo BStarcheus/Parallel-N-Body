@@ -259,6 +259,8 @@ bool collisionTest(std::vector<std::string> &name,
         checkCollisions<<<1,threads>>>(d_hasCollided_ptr, d_rad_ptr, d_pos_x_ptr, d_pos_y_ptr, mass.size());
         int numColl = thrust::reduce(d_hasCollided.begin(), d_hasCollided.end(), 0);
         
+        // Make sure the calculations are finished on the gpu before moving on
+        cudaDeviceSynchronize();
         for (int j = 0; j < mass.size(); j++) {
             if(hasCollided[j] == true) {
                 std::cout << name[j] << std::endl;
