@@ -150,10 +150,10 @@ int check_intersection(float x1, float y1, float r1, float x2, float y2, float r
 
 void visualize(std::vector<Body> &bodies) {
     for (int i = 0; i < bodies.size(); i++) {
-    bodies[i].plot_x.push_back(bodies[i].pos_x);
-    bodies[i].plot_y.push_back(bodies[i].pos_y);
-    // This is redundant but makes calling scatter() easier
-    bodies[i].colors.push_back(bodies[i].color);
+        bodies[i].plot_x.push_back(bodies[i].pos_x);
+        bodies[i].plot_y.push_back(bodies[i].pos_y);
+        // This is redundant but makes calling scatter() easier
+        bodies[i].colors.push_back(bodies[i].color);
     }
 }
 
@@ -216,7 +216,7 @@ bool collisionTest(std::vector<Body> &bodies, float duration)
 void plotBodies(std::vector<Body> &bodies) {
     for (int i = 0; i < bodies.size(); i++) {
         //std::cout << "bodies[i].plot_x: " << bodies[i].plot_x[1] << std::endl; 	
-        matplotlibcpp::scatter_colored(bodies[i].plot_x, bodies[i].plot_y, bodies[i].colors, bodies[i].radius);
+        matplotlibcpp::scatter_colored(bodies[i].plot_x, bodies[i].plot_y, bodies[i].colors, pow(2, 3*bodies[i].radius));
     } 
 
     matplotlibcpp::save("plot.pdf");
