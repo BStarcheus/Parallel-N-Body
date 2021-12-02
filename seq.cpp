@@ -158,7 +158,7 @@ void visualize(std::vector<Body> &bodies) {
 }
 
 
-bool collisionTest(std::vector<Body> &bodies, int duration) 
+bool collisionTest(std::vector<Body> &bodies, float duration) 
 {
     bool collisionDetected = false;
     int timestepCounter = 0;
