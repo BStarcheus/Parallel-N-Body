@@ -28,6 +28,7 @@ const float GRAVITY = 0.000000000066742;
 
 void readInitStateFile(std::string filename,
                        std::vector<std::string> &name,
+                       std::vector<std::string> &color,
                        thrust::host_vector<float> &mass,
                        thrust::host_vector<float> &rad,
                        thrust::host_vector<float> &pos_x,
@@ -40,6 +41,9 @@ void readInitStateFile(std::string filename,
 
     while (std::getline(file, elem, ',')) {
         name.push_back(elem);
+
+        std::getline(file, elem, ',');
+        color.push_back(elem);
 
         std::getline(file, elem, ',');
         mass.push_back(std::stof(elem));
@@ -280,6 +284,7 @@ int main(int argc, char **argv) {
     std::string filename = argv[1];
     
     std::vector<std::string> name;
+    std::vector<std::string> color;
     thrust::host_vector<float> mass;
     thrust::host_vector<float> rad;
     thrust::host_vector<float> pos_x;
@@ -288,7 +293,7 @@ int main(int argc, char **argv) {
     thrust::host_vector<float> vel_y;
 
     // Load initial state of bodies into separate vectors for each type of data
-    readInitStateFile(filename, name, mass, rad, pos_x, pos_y, vel_x, vel_y);
+    readInitStateFile(filename, name, color, mass, rad, pos_x, pos_y, vel_x, vel_y);
     
     // Take in time duration from the user
     float duration;
